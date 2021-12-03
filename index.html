@@ -1,0 +1,302 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Table Stakes Bingo</title>
+    <meta name="description" content="Table Stakes Bingo">
+
+    <meta property="og:title" content="Table Stakes Bingo">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="">
+    <meta property="og:image" content="">
+    <meta property="og:description" content="">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="">
+    <meta name="twitter:creator" content="">
+    <meta name="twitter:title" content="Table Stakes Bingo">
+    <meta name="twitter:description" content="">
+    <meta name="twitter:image" content="">
+
+    <link href="/shared/css/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<style>
+
+#bingo-card {
+    font-family: -apple-system, "system-ui", "avenir next", avenir, helvetica, "helvetica neue", ubuntu, roboto, noto, "segoe ui", arial, sans-serif;
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+#bingo-card .hed--bingo-card {
+    width: 100%;
+}
+
+#bingo-card table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#bingo-card td {
+    padding: 2px;
+    max-width: 105px;
+    width: 105px;
+    height: 105px;
+    border: 2px solid #f05a28;
+    color: #67bfe4;
+    color: #fff;
+    background-color: #202020;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
+    cursor: pointer;
+
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select:none;
+    user-select:none;
+    -o-user-select:none;
+}
+
+#bingo-card td.marked {
+    opacity: 0.85;
+}
+
+#bingo-card .button {
+    font-size: 22px;
+    background-color: #202020;
+    color: #67bfe4;
+    color: #fff;
+    margin-top: 20px;
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 1px 1px 1px 1px #f05a28;
+    display: inline-block;
+    font-weight: bold;
+    
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select:none;
+    user-select:none;
+    -o-user-select:none;
+}
+
+#bingo-card .button:hover {
+    box-shadow: 1px 1px 1px 0px #f05a28;
+}
+
+#bingo-card .button .fa {
+    padding-left: 4px;
+}
+
+#bingo-card .button--regenerate {
+    float: left;
+}
+
+#bingo-card .button--download {
+    float: right;
+}
+
+#bingo-card td.free-space {
+    background-image: url(media/free.jpg);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+@media (max-width: 500px) {
+    #bingo-card td {
+        font-size: 10px;
+        max-width: 18%;
+        width: 18%;
+        height: 80px;
+    }
+    #bingo-card .button--regenerate { float: right; }
+    #bingo-card .button--download { float: right; }
+}
+
+</style>
+</head>
+<body>
+<div id="bingo-card">
+    <img class="hed--bingo-card" src="media/bingo-head.jpg" alt="Holiday Movie Bingo">
+    <table></table>
+    <div class="button button--regenerate" unselectable="on" onselectstart="return false;">
+        Generate new card
+        <i class="fa fa-refresh" aria-hidden="true"></i>
+    </div>
+    <div class="button button--download" unselectable="on" onselectstart="return false;">
+        Download card
+        <i class="fa fa-download" aria-hidden="true"></i>
+    </div>
+</div>
+<script src="js/d3.v4.min.js"></script>
+<script src="js/html2canvas.min.js"></script>
+<script>
+
+var maxTextLength = 13;
+
+var bingoCard = d3.select('#bingo-card'),
+    table = bingoCard.select('table'),
+    buttonRegenerate = bingoCard.select('.button--regenerate'),
+    buttonDownload = bingoCard.select('.button--download');
+
+function ready(error, data) {
+    if (error) throw error;
+    
+    table
+        .datum(data)
+        .call(updateTable);
+
+    function generateNewCard() {
+        table
+            .call(updateTable);
+
+        table.selectAll('td')
+            .classed('marked', false);
+    }
+
+    buttonRegenerate
+        .on('click', generateNewCard);
+
+    function download() {
+        html2canvas(bingoCard.node(), {
+            onrendered: function(canvas) {
+                var dataURL = canvas.toDataURL("image/png");
+                var a = document.createElement('a');
+                a.href = dataURL;
+                a.download = 'table-stakes-bingo.png';
+                a.click();
+            }
+        });
+    }
+
+    buttonDownload
+        .on('click', download);
+}
+
+function updateTable(selection) {
+    var tr = table.selectAll('tr')
+        .data(function(data) { return selectOptions(data); });
+    
+    tr.exit().remove();
+
+    var trEnter = tr.enter().append('tr');
+
+    var td = tr.merge(trEnter).selectAll('td')
+        .data(function(d) { return d; });
+
+    td.exit().remove();
+
+    var tdEnter = td.enter().append('td');
+
+    function clickSpace() {
+        const space = d3.select(this);
+        const marked = space.classed('marked');
+        space.classed('marked', !marked);
+    }
+
+    tdEnter
+        .classed('free-space', function(d) { return d === 'FREE SPACE'; })
+        .on('click', clickSpace);
+
+    td.merge(tdEnter)
+        .text(function(d) {  if (d !== 'FREE SPACE') return d; });
+}
+
+function cleanOptionText(text) {
+    return splitText(text, maxTextLength);
+}
+
+function unique(array) {
+    return array
+        .filter((d, i, a) => a.indexOf(d) === i);
+}
+
+function selectOptions(data) {
+    var queue = d3.shuffle(data.slice()),
+        options = [],
+        squares = [],
+        categories = unique(queue.map(function(d) { return d.category; })),
+        nCategories = categories.length;
+    
+    // Pick one from each category first
+    // (assumes nCategories < 13)
+    for (var i = 0; i < nCategories; i++) {
+
+        // Pick an option from the current category
+        var category = categories[i];
+        var selected = queue.filter(function(d) { return d.category === category; })[0];
+        var index = queue.indexOf(selected);
+
+        // Add this option to the row
+        options.push({
+            text: cleanOptionText(selected.option),
+            category: selected.category,
+            x: i % 5,
+            y: Math.floor(i / 5),
+        });
+
+        // Remove this option from the queue
+        queue.splice(index, 1);
+    }
+
+    // Then pick at random from the remaining options
+    for (var nCategories = 0; i < 25; i++) {
+        // Pick a random option
+        var randomIndex = Math.floor(Math.random() * queue.length), 
+            selected = queue[randomIndex];
+
+        // Add this option to the row
+        options.push({
+            text: cleanOptionText(selected.option),
+            category: selected.category,
+            x: i % 5,
+            y: Math.floor(i / 5),
+        });
+
+        // Remove this option from the queue
+        queue.splice(randomIndex, 1);
+    }
+
+    // Populate a 5 x 5 matrix with the option text
+    for (var x = 0; x < 5; x++) {
+        var row = []
+        for (var y = 0; y < 5; y++) {
+            var optionText = options 
+                .filter(function(option) { return option.x === x && option.y === y; })[0]
+                .text;
+            row.push(optionText);
+        }
+        squares.push(row);
+    }
+
+    return squares;
+}
+
+// Split long words in half
+function splitText(text, maxLength) {
+    return text
+        .split(' ')
+        .map(function(d) {
+            if (d.length > maxLength) {
+                var i = Math.ceil(d.length / 2),
+                    d0 = d.slice(0, i),
+                    d1 = d.slice(i);
+                return d0 + ' ' + d1;
+            }
+            return d;
+        })
+        .join(' ');
+}
+
+d3.csv('data/options.csv', ready);
+
+</script>
+</body>
+</html>
