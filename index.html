@@ -268,10 +268,15 @@ function selectOptions(data) {
     for (var x = 0; x < 5; x++) {
         var row = []
         for (var y = 0; y < 5; y++) {
-            var optionText = options 
-                .filter(function(option) { return option.x === x && option.y === y; })[0]
-                .text;
-            row.push(optionText);
+            // Free space
+            if (x === 2 && y === 2) {
+                row.push('FREE SPACE');
+            } else {
+                var optionText = options 
+                    .filter(function(option) { return option.x === x && option.y === y; })[0]
+                    .text;
+                row.push(optionText);
+            }
         }
         squares.push(row);
     }
